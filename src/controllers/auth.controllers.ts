@@ -284,8 +284,35 @@ const signinUser = asynchandler(
   }
 );
 
+const handleSocilaLogin = asynchandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const user = await User.findById(req.user?._id);
+
+    if (!user) {
+      return next(new ApiError(404, "user not found"));
+    }
+
+    const { accessToken, refreshToken } = await genrateAccessAndRefreshToken(
+      user.id
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .redirect(`${process.env.CLIENT_URL}`);
+  }
+);
+
 const getCurrentUser = asynchandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
     const user = await User.findById(req.user?._id).select(
       "-password -refreshToken"
     );
@@ -298,6 +325,7 @@ const getCurrentUser = asynchandler(
 const signOutUser = asynchandler(
   async (req: Request, res: Response, next: NextFunction) => {
     await User.findByIdAndUpdate(
+      //@ts-ignore
       req.user?._id,
       {
         $unset: {
@@ -324,6 +352,7 @@ const signOutUser = asynchandler(
 const updateUser = asynchandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { Fullname, Username } = updateUserSchema.parse(req.body);
+    //@ts-ignore
     const user = await User.findById(req.user?._id);
 
     if (!user) {
@@ -331,6 +360,7 @@ const updateUser = asynchandler(
     }
 
     const updated = await User.findByIdAndUpdate(
+      //@ts-ignore
       req.user?._id,
       { Fullname, Username },
       { new: true }
@@ -344,6 +374,7 @@ const updateUser = asynchandler(
 
 const deleteUser = asynchandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
     await User.findByIdAndDelete(req.user?._id);
     return res
       .status(200)
@@ -363,4 +394,5 @@ export {
   forgotPassword,
   updateUser,
   verifyForgotPassword,
+  handleSocilaLogin,
 };
